@@ -1,0 +1,61 @@
+---
+title: "Presentation Stuff"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(tidyverse)
+library(lubridate)
+dt <- data.table(user = sample(1:10,50,replace = T), price = round(rexp(50, .1),2),
+                 volume = sample(1:5), item = sample(c("Item_1","Item_2","Item_3","Item_4","Item_5","Item_6"),50,replace = T))
+dt[,invoice := paste0(sample(30:50,50,replace = T),user,"1421")]
+datas <- seq(ymd('2019-02-07'),ymd('2019-09-22'), by = 'weeks')
+dt[,price := price*2]
+dt[,date := sample(datas,50,replace = T)]
+dt <- dt[,c(1,5,6,4,2,3)]
+```
+
+ - ### How data from source looks like 
+
+
+```{r}
+head(dt)
+```
+
+- ### How data must look like for the test
+
+```{r, echo=FALSE}
+
+dt_teste <- dt %>% 
+  group_by(user) %>%
+  summarise(success = sum(volume[item == "Item_1"])) %>%
+  mutate(success = ifelse(success > 0,1,0)) 
+dt_teste
+```
+
+- ### CR
+
+```{r, echo = FALSE}
+
+dt %>% 
+  group_by(user) %>%
+  summarise(success = sum(volume[item == "Item_1"])) %>%
+  mutate(success = ifelse(success > 0,1,0)) %>%
+  summarise(CR = round(mean(success),2))
+```
+
+- ### Parameter estimation with Beta-binomial relationship
+
+```{r, echo = F}
+
+trials <- 1000000
+success <- sum(dt_teste$success)
+n_users <- nrow(dt_teste)
+
+CR <- data.table( CR = rbeta(trials, success, n_users - success))
+
+ggplot(CR, aes(x=CR)) + 
+  geom_histogram(fill="blue",alpha = .3,bins = 30) + geom_vline(xintercept = 0.3)
+```
+
